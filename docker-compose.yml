@@ -1,0 +1,17 @@
+services:
+  db:
+    image: mysql:8.0 
+    container_name: bookstore_db
+    environment:
+      MYSQL_ROOT_PASSWORD: mysecretpassword
+      MYSQL_DATABASE: OnlineBookstore
+      MYSQL_USER: user
+      MYSQL_PASSWORD: userpassword
+    ports:
+      - "3306:3306"  
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/database/db.sql:/docker-entrypoint-initdb.d/init.sql
+
+volumes:
+  mysql_data:
