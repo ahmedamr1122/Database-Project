@@ -34,7 +34,7 @@ class Order:
                 cursor.execute("SELECT selling_price FROM Books WHERE isbn = %s", (item['isbn'],))
                 book = cursor.fetchone()
                 if not book:
-                     raise Exception(f"Book {item['isbn']} not found")
+                    raise Exception(f"Book {item['isbn']} not found")
                 
                 price = book['selling_price']
                 quantity = item['quantity']
@@ -66,7 +66,7 @@ class Order:
             conn.rollback()
             return False, f"Order failed: {str(e)}"
         finally:
-             if conn.is_connected():
+            if conn.is_connected():
                 cursor.close()
                 conn.close()
 
@@ -81,7 +81,7 @@ class Order:
             cursor.execute(query, (user_id,))
             return cursor.fetchall()
         finally:
-             if conn.is_connected():
+            if conn.is_connected():
                 cursor.close()
                 conn.close()
     
@@ -106,6 +106,6 @@ class Order:
             
             return {'header': header, 'items': items}
         finally:
-             if conn.is_connected():
+            if conn.is_connected():
                 cursor.close()
                 conn.close()
