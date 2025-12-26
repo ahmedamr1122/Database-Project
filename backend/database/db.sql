@@ -109,7 +109,7 @@ CREATE TABLE Publisher_Orders (
 -- =============================================
 DELIMITER //
 
--- 1. Prevent Negative Stock [cite: 35]
+-- 1. Prevent Negative Stock 
 CREATE TRIGGER Prevent_Negative_Stock
 BEFORE UPDATE ON Books
 FOR EACH ROW
