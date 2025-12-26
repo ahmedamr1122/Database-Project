@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block title %}Modify Book - Admin{% endblock %}
+
+{% block content %}
+<h2><i class="fas fa-edit"></i> Modify Book</h2>
+
+<!-- Search Section -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-search"></i> Search for Book</h5>
+            </div>
+            <div class="card-body">
+                <form method="GET" action="/admin/modify-book" id="searchForm">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="search_isbn" class="form-label">Search by ISBN</label>
+                            <input type="text" class="form-control" id="search_isbn" name="isbn" 
+                                   placeholder="Enter ISBN">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="search_title" class="form-label">Search by Title</label>
+                            <input type="text" class="form-control" id="search_title" name="title" 
+                                   placeholder="Enter book title">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Form (shown when book is found) -->
+{% if book %}
+<div class="row mt-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-edit"></i> Edit Book Details</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="/admin/modify-book" id="modifyBookForm">
+                    <input type="hidden" name="isbn" value="{{ book.isbn }}">
+
+                    <div class="mb-3">
+                        <label class="form-label">ISBN (Cannot be changed)</label>
+                        <input type="text" class="form-control" value="{{ book.isbn }}" disabled>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Title</label>
+                        <input type="text" class="form-control" id="title" name="title" 
+                               value="{{ book.title }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="authors" class="form-label">Author(s)</label>
+                        <input type="text" class="form-control" id="authors" name="authors" 
+                               value="{{ book.authors }}" required>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="publisher_id" class="form-label">Publisher</label>
+                            <select class="form-select" id="publisher_id" name="publisher_id" required>
+                                {% for publisher in publishers %}
+                                    <option value="{{ publisher.publisher_id }}" 
+                                        {% if publisher.publisher_id == book.publisher_id %}selected{% endif %}>
+                                        {{ publisher.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="pub_year" class="form-label">Publication Year</label>
+                            <input type="number" class="form-control" id="pub_year" name="pub_year" 
+                                   value="{{ book.pub_year }}" min="1900" max="2025" required>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="selling_price" class="form-label">Selling Price ($)</label>
+                            <input type="number" class="form-control" id="selling_price" name="selling_price" 
+                                   value="{{ book.selling_price }}" step="0.01" min="0" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="category" class="form-label">Category</label>
+                            <select class="form-select" id="category" name="category" required>
+                                <option value="Science" {% if book.category == 'Science' %}selected{% endif %}>Science</option>
+                                <option value="Art" {% if book.category == 'Art' %}selected{% endif %}>Art</option>
+                                <option value="Religion" {% if book.category == 'Religion' %}selected{% endif %}>Religion</option>
+                                <option value="History" {% if book.category == 'History' %}selected{% endif %}>History</option>
+                                <option value="Geography" {% if book.category == 'Geography' %}selected{% endif %}>Geography</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="stock" class="form-label">Current Stock</label>
+                            <input type="number" class="form-control" id="stock" name="stock" 
+                                   value="{{ book.stock }}" min="0" required>
+                            <small class="text-danger">Warning: Cannot go negative!</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="threshold" class="form-label">Stock Threshold</label>
+                            <input type="number" class="form-control" id="threshold" name="threshold" 
+                                   value="{{ book.threshold }}" min="1" required>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save"></i> Save Changes
+                        </button>
+                        <a href="/admin/modify-book" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-info-circle"></i> Current Info</h5>
+                <table class="table table-sm">
+                    <tr>
+                        <th>ISBN:</th>
+                        <td>{{ book.isbn }}</td>
+                    </tr>
+                    <tr>
+                        <th>Stock:</th>
+                        <td>
+                            <span class="badge bg-{% if book.stock < book.threshold %}danger{% else %}success{% endif %}">
+                                {{ book.stock }} units
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Threshold:</th>
+                        <td>{{ book.threshold }} units</td>
+                    </tr>
+                    <tr>
+                        <th>Status:</th>
+                        <td>
+                            {% if book.stock < book.threshold %}
+                                <span class="badge bg-warning">Low Stock</span>
+                            {% else %}
+                                <span class="badge bg-success">In Stock</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Search Results -->
+{% if search_results %}
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-list"></i> Search Results</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>ISBN</th>
+                                <th>Title</th>
+                                <th>Author(s)</th>
+                                <th>Stock</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for result in search_results %}
+                            <tr>
+                                <td>{{ result.isbn }}</td>
+                                <td>{{ result.title }}</td>
+                                <td>{{ result.authors }}</td>
+                                <td>
+                                    <span class="badge bg-{% if result.stock < result.threshold %}danger{% else %}success{% endif %}">
+                                        {{ result.stock }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="/admin/modify-book?isbn={{ result.isbn }}" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Shopping Cart - Online Bookstore{% endblock %}
+
+{% block content %}
+<h2><i class="fas fa-shopping-cart"></i> My Shopping Cart</h2>
+
+{% if cart_items %}
+<div class="row mt-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-list"></i> Cart Items ({{ cart_items|length }})</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Book</th>
+                                <th>Price</th>
+                                <th>Quantity</th>
+                                <th>Subtotal</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in cart_items %}
+                            <tr>
+                                <td>
+                                    <strong>{{ item.title }}</strong><br>
+                                    <small class="text-muted">ISBN: {{ item.isbn }}</small><br>
+                                    <small class="text-muted">{{ item.authors }}</small>
+                                </td>
+                                <td>${{ item.selling_price }}</td>
+                                <td>
+                                    <form method="POST" action="/customer/cart/update" class="d-inline">
+                                        <input type="hidden" name="isbn" value="{{ item.isbn }}">
+                                        <input type="number" name="quantity" class="form-control form-control-sm" 
+                                               value="{{ item.quantity }}" min="1" max="{{ item.stock }}" 
+                                               style="width: 80px;" onchange="this.form.submit()">
+                                    </form>
+                                </td>
+                                <td><strong>${{ "%.2f"|format(item.selling_price * item.quantity) }}</strong></td>
+                                <td>
+                                    <form method="POST" action="/customer/cart/remove" class="d-inline">
+                                        <input type="hidden" name="isbn" value="{{ item.isbn }}">
+                                        <button type="submit" class="btn btn-sm btn-danger" 
+                                                onclick="return confirm('Remove this item from cart?')">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <!-- Order Summary -->
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-receipt"></i> Order Summary</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <td>Subtotal:</td>
+                        <td class="text-end"><strong>${{ "%.2f"|format(total) }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Shipping:</td>
+                        <td class="text-end"><strong>Free</strong></td>
+                    </tr>
+                    <tr class="border-top">
+                        <td><h5>Total:</h5></td>
+                        <td class="text-end"><h4 class="text-success">${{ "%.2f"|format(total) }}</h4></td>
+                    </tr>
+                </table>
+                <div class="d-grid gap-2">
+                    <a href="/customer/checkout" class="btn btn-success btn-lg">
+                        <i class="fas fa-credit-card"></i> Proceed to Checkout
+                    </a>
+                    <a href="/customer/search" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left"></i> Continue Shopping
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cart Actions -->
+        <div class="card mt-3">
+            <div class="card-body">
+                <h6><i class="fas fa-trash-alt"></i> Clear Cart</h6>
+                <form method="POST" action="/customer/cart/clear">
+                    <button type="submit" class="btn btn-sm btn-danger" 
+                            onclick="return confirm('Are you sure you want to clear your entire cart?')">
+                        <i class="fas fa-trash"></i> Clear All Items
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card text-center">
+            <div class="card-body py-5">
+                <i class="fas fa-shopping-cart fa-5x text-muted mb-4"></i>
+                <h3>Your cart is empty</h3>
+                <p class="text-muted">Start adding books to your cart!</p>
+                <a href="/customer/search" class="btn btn-primary btn-lg">
+                    <i class="fas fa-search"></i> Browse Books
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}Checkout - Online Bookstore{% endblock %}
+
+{% block content %}
+<h2><i class="fas fa-credit-card"></i> Checkout</h2>
+
+{% if cart_items %}
+<div class="row mt-4">
+    <!-- Order Review -->
+    <div class="col-md-7">
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-list-check"></i> Order Review</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Book</th>
+                                <th>Qty</th>
+                                <th>Price</th>
+                                <th>Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in cart_items %}
+                            <tr>
+                                <td>
+                                    <strong>{{ item.title }}</strong><br>
+                                    <small class="text-muted">{{ item.isbn }}</small>
+                                </td>
+                                <td>{{ item.quantity }}</td>
+                                <td>${{ item.selling_price }}</td>
+                                <td>${{ "%.2f"|format(item.selling_price * item.quantity) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-primary">
+                                <td colspan="3" class="text-end"><strong>Total:</strong></td>
+                                <td><strong>${{ "%.2f"|format(total) }}</strong></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Shipping Address -->
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-shipping-fast"></i> Shipping Address</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-0">
+                    <strong>{{ session.first_name }} {{ session.last_name }}</strong><br>
+                    {{ user_info.shipping_address }}<br>
+                    {{ user_info.phone_number }}<br>
+                    {{ user_info.email }}
+                </p>
+                <a href="/customer/profile" class="btn btn-sm btn-outline-primary mt-2">
+                    <i class="fas fa-edit"></i> Change Address
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Form -->
+    <div class="col-md-5">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-credit-card"></i> Payment Information</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="/customer/checkout" id="checkoutForm">
+                    <div class="mb-3">
+                        <label for="credit_card_no" class="form-label">Credit Card Number</label>
+                        <input type="text" class="form-control" id="credit_card_no" name="credit_card_no" 
+                               placeholder="1234 5678 9012 3456" maxlength="16" required>
+                        <small class="text-muted">16-digit card number (no spaces)</small>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="expiry_month" class="form-label">Expiry Month</label>
+                            <select class="form-select" id="expiry_month" name="expiry_month" required>
+                                <option value="">MM</option>
+                                {% for i in range(1, 13) %}
+                                    <option value="{{ "%02d"|format(i) }}">{{ "%02d"|format(i) }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="expiry_year" class="form-label">Expiry Year</label>
+                            <select class="form-select" id="expiry_year" name="expiry_year" required>
+                                <option value="">YYYY</option>
+                                {% for year in range(2025, 2036) %}
+                                    <option value="{{ year }}">{{ year }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="cvv" class="form-label">CVV</label>
+                        <input type="text" class="form-control" id="cvv" name="cvv" 
+                               placeholder="123" maxlength="3" required>
+                        <small class="text-muted">3-digit security code</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="cardholder_name" class="form-label">Cardholder Name</label>
+                        <input type="text" class="form-control" id="cardholder_name" name="cardholder_name" 
+                               placeholder="Name on card" required>
+                    </div>
+
+                    <hr>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> <strong>Total Amount:</strong> ${{ "%.2f"|format(total) }}
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="agree_terms" required>
+                        <label class="form-check-label" for="agree_terms">
+                            I agree to the terms and conditions
+                        </label>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="fas fa-check-circle"></i> Place Order
+                        </button>
+                        <a href="/customer/cart" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Cart
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card mt-3 bg-light">
+            <div class="card-body">
+                <h6><i class="fas fa-lock"></i> Secure Checkout</h6>
+                <small class="text-muted">
+                    Your payment information is encrypted and secure.
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-warning">
+    <i class="fas fa-exclamation-triangle"></i> Your cart is empty. Please add items before checkout.
+    <a href="/customer/search" class="alert-link">Browse books</a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('checkoutForm').addEventListener('submit', function(e) {
+    const cardNo = document.getElementById('credit_card_no').value;
+    const cvv = document.getElementById('cvv').value;
+    
+    // Basic validation
+    if (cardNo.length !== 16 || !/^\d+$/.test(cardNo)) {
+        e.preventDefault();
+        alert('Please enter a valid 16-digit card number (digits only, no spaces)');
+        return;
+    }
+    
+    if (cvv.length !== 3 || !/^\d+$/.test(cvv)) {
+        e.preventDefault();
+        alert('Please enter a valid 3-digit CVV');
+        return;
+    }
+    
+    if (!confirm('Confirm your order of ${{ "%.2f"|format(total) }}?')) {
+        e.preventDefault();
+    }
+});
+
+// Format credit card input
+document.getElementById('credit_card_no').addEventListener('input', function(e) {
+    this.value = this.value.replace(/\D/g, '');
+});
+
+// Format CVV input
+document.getElementById('cvv').addEventListener('input', function(e) {
+    this.value = this.value.replace(/\D/g, '');
+});
+</script>
+{% endblock %}

@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Search Books - Online Bookstore{% endblock %}
+
+{% block content %}
+<h2><i class="fas fa-search"></i> Search Books</h2>
+
+<!-- Search Form -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-filter"></i> Search Filters</h5>
+            </div>
+            <div class="card-body">
+                <form method="GET" action="/customer/search" id="searchForm">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="isbn" class="form-label">ISBN</label>
+                            <input type="text" class="form-control" id="isbn" name="isbn" 
+                                   placeholder="978-0-13-468599-1" value="{{ request.args.get('isbn', '') }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="title" class="form-label">Title</label>
+                            <input type="text" class="form-control" id="title" name="title" 
+                                   placeholder="Enter book title" value="{{ request.args.get('title', '') }}">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="author" class="form-label">Author</label>
+                            <input type="text" class="form-control" id="author" name="author" 
+                                   placeholder="Author name" value="{{ request.args.get('author', '') }}">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="category" class="form-label">Category</label>
+                            <select class="form-select" id="category" name="category">
+                                <option value="">All Categories</option>
+                                <option value="Science" {% if request.args.get('category') == 'Science' %}selected{% endif %}>Science</option>
+                                <option value="Art" {% if request.args.get('category') == 'Art' %}selected{% endif %}>Art</option>
+                                <option value="Religion" {% if request.args.get('category') == 'Religion' %}selected{% endif %}>Religion</option>
+                                <option value="History" {% if request.args.get('category') == 'History' %}selected{% endif %}>History</option>
+                                <option value="Geography" {% if request.args.get('category') == 'Geography' %}selected{% endif %}>Geography</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="publisher" class="form-label">Publisher</label>
+                            <input type="text" class="form-control" id="publisher" name="publisher" 
+                                   placeholder="Publisher name" value="{{ request.args.get('publisher', '') }}">
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                        <a href="/customer/search" class="btn btn-secondary">
+                            <i class="fas fa-redo"></i> Reset
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search Results -->
+{% if books %}
+<div class="row mt-4">
+    <div class="col-12">
+        <h4>Search Results ({{ books|length }} books found)</h4>
+    </div>
+</div>
+<div class="row mt-3">
+    {% for book in books %}
+    <div class="col-md-4 mb-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">{{ book.title }}</h5>
+                <p class="card-text">
+                    <small class="text-muted">
+                        <strong>ISBN:</strong> {{ book.isbn }}<br>
+                        <strong>Author(s):</strong> {{ book.authors }}<br>
+                        <strong>Publisher:</strong> {{ book.publisher_name }}<br>
+                        <strong>Year:</strong> {{ book.pub_year }}<br>
+                        <strong>Category:</strong> <span class="badge bg-primary">{{ book.category }}</span>
+                    </small>
+                </p>
+                <h4 class="text-success">${{ book.selling_price }}</h4>
+                {% if book.stock > 0 %}
+                    <span class="badge bg-success mb-2">In Stock ({{ book.stock }} available)</span>
+                {% else %}
+                    <span class="badge bg-danger mb-2">Out of Stock</span>
+                {% endif %}
+            </div>
+            <div class="card-footer">
+                {% if book.stock > 0 %}
+                    <form method="POST" action="/customer/cart/add" class="add-to-cart-form">
+                        <input type="hidden" name="isbn" value="{{ book.isbn }}">
+                        <div class="input-group mb-2">
+                            <input type="number" name="quantity" class="form-control" 
+                                   min="1" max="{{ book.stock }}" value="1" required>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-cart-plus"></i> Add to Cart
+                            </button>
+                        </div>
+                    </form>
+                {% else %}
+                    <button class="btn btn-secondary w-100" disabled>
+                        <i class="fas fa-ban"></i> Unavailable
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% elif request.args %}
+<div class="alert alert-warning mt-4">
+    <i class="fas fa-exclamation-triangle"></i> No books found matching your search criteria.
+</div>
+{% else %}
+<div class="alert alert-info mt-4">
+    <i class="fas fa-info-circle"></i> Use the search form above to find books.
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/customer.js') }}"></script>
+{% endblock %}

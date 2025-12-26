@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Orders - Admin{% endblock %}
+
+{% block content %}
+<h2><i class="fas fa-box"></i> Manage Publisher Orders</h2>
+<p class="text-muted">View and confirm orders from publishers</p>
+
+<!-- Pending Orders -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="fas fa-clock"></i> Pending Orders ({{ pending_orders|length }})
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if pending_orders %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>ISBN</th>
+                                    <th>Book Title</th>
+                                    <th>Publisher</th>
+                                    <th>Quantity</th>
+                                    <th>Order Date</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in pending_orders %}
+                                <tr>
+                                    <td>{{ order.po_id }}</td>
+                                    <td>{{ order.isbn }}</td>
+                                    <td>{{ order.book_title }}</td>
+                                    <td>{{ order.publisher_name }}</td>
+                                    <td><span class="badge bg-primary">{{ order.quantity }} units</span></td>
+                                    <td>{{ order.order_date }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-success" 
+                                                onclick="confirmOrder({{ order.po_id }})">
+                                            <i class="fas fa-check"></i> Confirm
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> No pending orders at this time.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmed Orders -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-check-circle"></i> Recently Confirmed Orders
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if confirmed_orders %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>ISBN</th>
+                                    <th>Book Title</th>
+                                    <th>Publisher</th>
+                                    <th>Quantity</th>
+                                    <th>Order Date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in confirmed_orders %}
+                                <tr>
+                                    <td>{{ order.po_id }}</td>
+                                    <td>{{ order.isbn }}</td>
+                                    <td>{{ order.book_title }}</td>
+                                    <td>{{ order.publisher_name }}</td>
+                                    <td><span class="badge bg-primary">{{ order.quantity }} units</span></td>
+                                    <td>{{ order.order_date }}</td>
+                                    <td>
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check"></i> Confirmed
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted mb-0">No confirmed orders yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Order Statistics -->
+<div class="row mt-4">
+    <div class="col-md-4">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <h3>{{ stats.total_orders }}</h3>
+                <p class="mb-0">Total Orders</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-warning text-dark">
+            <div class="card-body text-center">
+                <h3>{{ stats.pending_count }}</h3>
+                <p class="mb-0">Pending</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <h3>{{ stats.confirmed_count }}</h3>
+                <p class="mb-0">Confirmed</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function confirmOrder(orderId) {
+    if (confirm('Are you sure you want to confirm this order? Stock will be updated automatically.')) {
+        fetch(`/admin/orders/${orderId}/confirm`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Order confirmed successfully! Stock has been updated.');
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error confirming order: ' + error);
+        });
+    }
+}
+</script>
+{% endblock %}

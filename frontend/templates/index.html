@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Online Bookstore{% endblock %}
+
+{% block content %}
+<div class="hero-section text-center py-5 bg-light rounded">
+    <h1 class="display-4">Welcome to Online Bookstore</h1>
+    <p class="lead">Discover your next favorite book</p>
+    <div class="mt-4">
+        {% if not session.user_id %}
+            <a href="/login" class="btn btn-primary btn-lg me-2">
+                <i class="fas fa-sign-in-alt"></i> Login
+            </a>
+            <a href="/register" class="btn btn-success btn-lg">
+                <i class="fas fa-user-plus"></i> Register
+            </a>
+        {% else %}
+            {% if session.role == 'customer' %}
+                <a href="/customer/search" class="btn btn-primary btn-lg">
+                    <i class="fas fa-search"></i> Browse Books
+                </a>
+            {% else %}
+                <a href="/admin/dashboard" class="btn btn-primary btn-lg">
+                    <i class="fas fa-tachometer-alt"></i> Go to Dashboard
+                </a>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-book fa-3x text-primary mb-3"></i>
+                <h5 class="card-title">Wide Selection</h5>
+                <p class="card-text">Browse through thousands of books across multiple categories</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-shipping-fast fa-3x text-success mb-3"></i>
+                <h5 class="card-title">Fast Delivery</h5>
+                <p class="card-text">Quick and reliable shipping to your doorstep</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-lock fa-3x text-warning mb-3"></i>
+                <h5 class="card-title">Secure Payment</h5>
+                <p class="card-text">Safe and secure checkout process</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-12">
+        <h3 class="text-center mb-4">Book Categories</h3>
+        <div class="d-flex justify-content-center flex-wrap gap-3">
+            <span class="badge bg-primary p-3 fs-6">Science</span>
+            <span class="badge bg-success p-3 fs-6">Art</span>
+            <span class="badge bg-danger p-3 fs-6">Religion</span>
+            <span class="badge bg-warning p-3 fs-6">History</span>
+            <span class="badge bg-info p-3 fs-6">Geography</span>
+        </div>
+    </div>
+</div>
+{% endblock %}
