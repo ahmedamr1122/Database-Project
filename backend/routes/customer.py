@@ -165,12 +165,49 @@ def checkout():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
-    # 1. Fetch User Info (This fixes the 'user_info' error)
+    # Handle POST (form submission)
+    if request.method == 'POST':
+        credit_card_no = request.form.get('credit_card_no')
+        # Construct expiry date from month/year dropdowns
+        expiry_month = request.form.get('expiry_month')
+        expiry_year = request.form.get('expiry_year')
+        
+        if expiry_month and expiry_year:
+            # Create a date string for the last day of the expiry month
+            expiry_date = f"{expiry_year}-{expiry_month.zfill(2)}-01"
+        else:
+            expiry_date = None
+        
+        cursor.close()
+        conn.close()
+        
+        if not credit_card_no or not expiry_date:
+            flash('Payment details required', 'danger')
+            return redirect(url_for('customer.checkout'))
+            
+        if not validate_credit_card(credit_card_no):
+             flash('Invalid credit card', 'danger')
+             return redirect(url_for('customer.checkout'))
+             
+        if not validate_expiry_date(expiry_date):
+            flash('Card expired or invalid date', 'danger')
+            return redirect(url_for('customer.checkout'))
+            
+        success, message = Order.create_order(user_id, credit_card_no, expiry_date)
+        
+        if success:
+            flash(message, 'success')
+            return redirect(url_for('customer.get_orders'))
+        else:
+            flash(message, 'danger')
+            return redirect(url_for('customer.checkout'))
+
+    # Handle GET (display checkout page)
+    # 1. Fetch User Info
     cursor.execute("SELECT * FROM Users WHERE user_id = %s", (user_id,))
     user_info = cursor.fetchone()
 
-    # 2. Fetch Cart Items (Keep your existing logic here)
-    # Note: Adjust table name if yours is 'Shopping_Cart' or similar
+    # 2. Fetch Cart Items
     query = """
         SELECT B.title, B.selling_price, SC.quantity, (B.selling_price * SC.quantity) as total_price
         FROM Shopping_Cart SC
@@ -182,44 +219,17 @@ def checkout():
 
     # 3. Calculate Totals
     subtotal = sum(item['total_price'] for item in items)
-    total = subtotal # Add tax/shipping logic here if needed later
+    total = subtotal
 
     cursor.close()
     conn.close()
 
-    # 4. Pass 'user_info' to the template
+    # 4. Render checkout page
     return render_template('customer/checkout.html', 
                         cart_items=items, 
                         subtotal=subtotal, 
                         total=total, 
                         user_info=user_info)
-    # POST
-    credit_card_no = request.form.get('credit_card_no')
-    # Expiry comes as Month and Year often or just date. file structure says dropdowns implies Month/Year?
-    # Validators expect YYYY-MM-DD. 
-    # Let's see if we can get a date string or construct it.
-    expiry_date = request.form.get('expiry_date') # assuming format YYYY-MM-DD from input type=date or constructed
-    
-    if not credit_card_no or not expiry_date:
-        flash('Payment details required', 'danger')
-        return redirect(url_for('customer.checkout'))
-        
-    if not validate_credit_card(credit_card_no):
-         flash('Invalid credit card', 'danger')
-         return redirect(url_for('customer.checkout'))
-         
-    if not validate_expiry_date(expiry_date):
-        flash('Card expired or invalid date', 'danger')
-        return redirect(url_for('customer.checkout'))
-        
-    success, message = Order.create_order(user_id, credit_card_no, expiry_date)
-    
-    if success:
-        flash(message, 'success')
-        return redirect(url_for('customer.get_orders'))
-    else:
-        flash(message, 'danger')
-        return redirect(url_for('customer.checkout'))
 
 @customer_bp.route('/orders', methods=['GET'])
 @login_required
@@ -237,9 +247,9 @@ def get_orders():
         # NOTE: Make sure your table is named 'Order_Items' or 'Sales'
         # If this query crashes, your table name is likely different.
         query = """
-            SELECT B.title, B.price, OI.quantity 
+            SELECT B.title, B.selling_price as price, OI.quantity 
             FROM Order_Items OI
-            JOIN Books B ON OI.book_id = B.book_id
+            JOIN Books B ON OI.isbn = B.isbn
             WHERE OI.order_id = %s
         """
         try:
@@ -263,43 +273,43 @@ def profile():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
+    # Handle POST (Update Profile)
+    if request.method == 'POST':
+        first_name = request.form.get('first_name')
+        last_name = request.form.get('last_name')
+        email = request.form.get('email')
+        phone_number = request.form.get('phone_number')
+        shipping_address = request.form.get('shipping_address')
+        password = request.form.get('new_password') # Optional new password
+        
+        cursor.close()
+        conn.close()
+        
+        success, message = User.update_profile(user_id, first_name, last_name, email, phone_number, shipping_address, password)
+        
+        if success:
+            flash(message, 'success')
+        else:
+            flash(message, 'danger')
+            
+        return redirect(url_for('customer.profile'))
+
+    # Handle GET (Display Profile)
     # 1. Fetch User Details
     cursor.execute("SELECT * FROM Users WHERE user_id = %s", (user_id,))
     user = cursor.fetchone()
 
-    # 2. Fetch Orders (IMPORTANT: Verify 'user_id' vs 'customer_id' here)
-    # Based on your previous error, your table likely uses 'user_id'
+    # 2. Fetch Orders
     cursor.execute("SELECT * FROM Customer_Orders WHERE user_id = %s ORDER BY order_date DESC", (user_id,))
     orders = cursor.fetchall()
 
-    # 3. Calculate the stats
+    # 3. Calculate stats
     stats_data = {
-        'total_orders': len(orders)  # This counts the list of orders
+        'total_orders': len(orders)
     }
 
     cursor.close()
     conn.close()
 
-    # 4. PASS THE DATA (This fixes the error)
+    # 4. Render profile page
     return render_template('customer/profile.html', user=user, orders=orders, stats=stats_data)
-    
-    # POST (Update)
-    first_name = request.form.get('first_name')
-    last_name = request.form.get('last_name')
-    email = request.form.get('email')
-    phone_number = request.form.get('phone_number')
-    shipping_address = request.form.get('shipping_address')
-    password = request.form.get('password') # Optional
-    # Confirm password?
-    
-    success, message = User.update_profile(user_id, first_name, last_name, email, phone_number, shipping_address, password)
-    
-    if success:
-        flash(message, 'success')
-        # Update session info if changed? 
-        if email: session['username'] = email # If email is username? No, username is username.
-        # User.py doesnt allow username update.
-    else:
-        flash(message, 'danger')
-        
-    return redirect(url_for('customer.profile'))

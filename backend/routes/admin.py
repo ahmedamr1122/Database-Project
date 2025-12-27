@@ -207,8 +207,18 @@ def orders():
     """
     cursor.execute(query_confirmed)
     confirmed_orders = cursor.fetchall()
+
+    # 3. Get Customer Orders (New)
+    query_customer = """
+        SELECT co.order_id, co.order_date, co.total_price, co.status, u.username
+        FROM Customer_Orders co
+        JOIN Users u ON co.user_id = u.user_id
+        ORDER BY co.order_date DESC LIMIT 20
+    """
+    cursor.execute(query_customer)
+    customer_orders = cursor.fetchall()
     
-    # 3. Stats
+    # 4. Stats
     cursor.execute("SELECT COUNT(*) as count FROM Publisher_Orders")
     total_count = cursor.fetchone()['count']
 
@@ -230,6 +240,7 @@ def orders():
     return render_template('admin/orders.html', 
                            pending_orders=pending_orders, 
                            confirmed_orders=confirmed_orders, 
+                           customer_orders=customer_orders,
                            stats=stats_data)
 
 @admin_bp.route('/orders/<int:po_id>/confirm', methods=['POST'])
