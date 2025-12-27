@@ -78,6 +78,7 @@ CREATE TABLE Customer_Orders (
     total_price DECIMAL(10, 2),
     credit_card_no VARCHAR(16) NOT NULL, -- Added per requirement 
     expiry_date DATE NOT NULL,           -- Added per requirement 
+    status ENUM('Pending', 'Confirmed') DEFAULT 'Pending',
     FOREIGN KEY (user_id) REFERENCES Users(user_id)
 );
 

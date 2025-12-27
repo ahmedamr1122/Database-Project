@@ -103,3 +103,26 @@ class User:
             if conn.is_connected():
                 cursor.close()
                 conn.close()
+
+    @staticmethod
+    def get_top_customers(limit=5):
+        conn = get_db_connection()
+        if not conn: return []
+        try:
+            cursor = conn.cursor(dictionary=True)
+            # Sum of total_price from Customer_Orders group by user
+            query = """
+                SELECT u.username, SUM(co.total_price) as total_spent
+                FROM Users u
+                JOIN Customer_Orders co ON u.user_id = co.user_id
+                WHERE co.order_date >= DATE_SUB(NOW(), INTERVAL 3 MONTH)
+                GROUP BY u.user_id
+                ORDER BY total_spent DESC
+                LIMIT %s
+            """
+            cursor.execute(query, (limit,))
+            return cursor.fetchall()
+        finally:
+            if conn.is_connected():
+                cursor.close()
+                conn.close()

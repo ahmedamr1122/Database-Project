@@ -1,109 +1,106 @@
-{% extends "base.html" %}
-
-{% block title %}My Orders - Online Bookstore{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}My Orders - Online Bookstore{%
+endblock %} {% block content %}
 <h2><i class="fas fa-receipt"></i> My Orders</h2>
 <p class="text-muted">View your order history</p>
 
 {% if orders %}
 <div class="row mt-4">
-    <div class="col-md-12">
-        {% for order in orders %}
-        <div class="card mb-3">
-            <div class="card-header bg-primary text-white">
-                <div class="row align-items-center">
-                    <div class="col-md-8">
-                        <h5 class="mb-0">
-                            <i class="fas fa-box"></i> Order #{{ order.order_id }}
-                        </h5>
-                        <small>Placed on {{ order.order_date }}</small>
-                    </div>
-                    <div class="col-md-4 text-end">
-                        <h4 class="mb-0">${{ order.total_price }}</h4>
-                    </div>
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-sm">
-                        <thead>
-                            <tr>
-                                <th>ISBN</th>
-                                <th>Book Title</th>
-                                <th>Quantity</th>
-                                <th>Unit Price</th>
-                                <th>Subtotal</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for item in order.items %}
-                            <tr>
-                                <td>{{ item.isbn }}</td>
-                                <td>
-                                    <strong>{{ item.title }}</strong><br>
-                                    <small class="text-muted">{{ item.authors }}</small>
-                                </td>
-                                <td>{{ item.quantity }}</td>
-                                <td>${{ item.unit_price }}</td>
-                                <td>${{ "%.2f"|format(item.unit_price * item.quantity) }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                
-                <div class="row mt-3">
-                    <div class="col-md-6">
-                        <h6><i class="fas fa-credit-card"></i> Payment Information</h6>
-                        <p class="text-muted mb-0">
-                            Card: **** **** **** {{ order.credit_card_no[-4:] }}<br>
-                            Expiry: {{ order.expiry_date }}
-                        </p>
-                    </div>
-                    <div class="col-md-6 text-end">
-                        <h6>Order Summary</h6>
-                        <p class="mb-0">
-                            <strong>Total Items:</strong> {{ order.total_items }}<br>
-                            <strong>Total Amount:</strong> <span class="text-success h5">${{ order.total_price }}</span>
-                        </p>
-                    </div>
-                </div>
-            </div>
-            <div class="card-footer text-muted">
-                <small>
-                    <i class="fas fa-shipping-fast"></i> 
-                    Shipped to: {{ session.shipping_address }}
-                </small>
-            </div>
+  <div class="col-md-12">
+    {% for order in orders %}
+    <div class="card mb-3">
+      <div class="card-header bg-primary text-white">
+        <div class="row align-items-center">
+          <div class="col-md-8">
+            <h5 class="mb-0">
+              <i class="fas fa-box"></i> Order #{{ order.order_id }}
+            </h5>
+            <small>Placed on {{ order.order_date }}</small>
+          </div>
+          <div class="col-md-4 text-end">
+            <h4 class="mb-0">${{ order.total_price }}</h4>
+          </div>
         </div>
-        {% endfor %}
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>ISBN</th>
+                <th>Book Title</th>
+                <th>Quantity</th>
+                <th>Unit Price</th>
+                <th>Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in order.book_list %}
+              <tr>
+                <td>{{ item.isbn }}</td>
+                <td>
+                  <strong>{{ item.title }}</strong><br />
+                  <small class="text-muted">{{ item.authors }}</small>
+                </td>
+                <td>{{ item.quantity }}</td>
+                <td>${{ item.unit_price }}</td>
+                <td>${{ "%.2f"|format(item.unit_price * item.quantity) }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="row mt-3">
+          <div class="col-md-6">
+            <h6><i class="fas fa-credit-card"></i> Payment Information</h6>
+            <p class="text-muted mb-0">
+              Card: **** **** **** {{ order.credit_card_no[-4:] }}<br />
+              Expiry: {{ order.expiry_date }}
+            </p>
+          </div>
+          <div class="col-md-6 text-end">
+            <h6>Order Summary</h6>
+            <p class="mb-0">
+              <strong>Total Items:</strong> {{ order.total_items }}<br />
+              <strong>Total Amount:</strong>
+              <span class="text-success h5">${{ order.total_price }}</span>
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="card-footer text-muted">
+        <small>
+          <i class="fas fa-shipping-fast"></i>
+          Shipped to: {{ session.shipping_address }}
+        </small>
+      </div>
     </div>
+    {% endfor %}
+  </div>
 </div>
 
 <!-- Pagination (if needed) -->
 {% if orders|length >= 10 %}
 <div class="row mt-3">
-    <div class="col-md-12 text-center">
-        <p class="text-muted">Showing {{ orders|length }} orders</p>
-    </div>
+  <div class="col-md-12 text-center">
+    <p class="text-muted">Showing {{ orders|length }} orders</p>
+  </div>
 </div>
-{% endif %}
-
-{% else %}
+{% endif %} {% else %}
 <div class="row mt-4">
-    <div class="col-md-12">
-        <div class="card text-center">
-            <div class="card-body py-5">
-                <i class="fas fa-receipt fa-5x text-muted mb-4"></i>
-                <h3>No orders yet</h3>
-                <p class="text-muted">You haven't placed any orders yet. Start shopping now!</p>
-                <a href="/customer/search" class="btn btn-primary btn-lg">
-                    <i class="fas fa-search"></i> Browse Books
-                </a>
-            </div>
-        </div>
+  <div class="col-md-12">
+    <div class="card text-center">
+      <div class="card-body py-5">
+        <i class="fas fa-receipt fa-5x text-muted mb-4"></i>
+        <h3>No orders yet</h3>
+        <p class="text-muted">
+          You haven't placed any orders yet. Start shopping now!
+        </p>
+        <a href="/customer/search" class="btn btn-primary btn-lg">
+          <i class="fas fa-search"></i> Browse Books
+        </a>
+      </div>
     </div>
+  </div>
 </div>
-{% endif %}
-{% endblock %}
+{% endif %} {% endblock %}

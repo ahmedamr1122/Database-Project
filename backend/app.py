@@ -7,7 +7,10 @@ from routes.customer import customer_bp
 from routes.shared import shared_bp
 
 def create_app(config_class=Config):
-    app = Flask(__name__)
+    # Point to frontend directory
+    app = Flask(__name__, 
+                template_folder='../frontend/templates',
+                static_folder='../frontend/static')
     app.config.from_object(config_class)
     
     # Enable CORS if frontend is separate (likely)
@@ -41,9 +44,11 @@ def create_app(config_class=Config):
     # I will register it at root level for now.
     app.register_blueprint(customer_bp)
 
+    from flask import render_template
+    
     @app.route('/')
     def index():
-        return "Online Bookstore Backend Running"
+        return render_template('index.html')
 
     return app
 

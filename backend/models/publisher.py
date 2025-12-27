@@ -59,6 +59,24 @@ class Publisher:
         finally:
             conn.close()
 
+    @staticmethod
+    def add_publisher(name, address, email, phone, banking):
+        conn = get_db_connection()
+        if not conn: return False, "DB Connection Error"
+        try:
+            cursor = conn.cursor()
+            query = """
+                INSERT INTO Publishers (name, address, email_address, phone_number, banking_account)
+                VALUES (%s, %s, %s, %s, %s)
+            """
+            cursor.execute(query, (name, address, email, phone, banking))
+            conn.commit()
+            return True, "Publisher added successfully"
+        except Exception as e:
+            return False, str(e)
+        finally:
+            conn.close()
+
     # Reports Logic can be here or in a separate Report model, 
     # but file-structure says models/publisher.py generates reports (line 141)
     
@@ -79,5 +97,35 @@ class Publisher:
             return result['Last_Month_Sales'] if result else 0
         finally:
             if conn: conn.close()
-            
-    # Additional report methods can be added following db.sql templates
+
+    @staticmethod
+    def report_sales_day(date_str):
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor(dictionary=True)
+            query = """
+                SELECT SUM(total_price) AS Daily_Sales
+                FROM Customer_Orders 
+                WHERE date(order_date) = %s
+            """
+            cursor.execute(query, (date_str,))
+            result = cursor.fetchone()
+            return result['Daily_Sales'] if result and result['Daily_Sales'] else 0
+        finally:
+            if conn: conn.close()
+
+    @staticmethod
+    def get_replenishment_history(isbn):
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor(dictionary=True)
+            query = """
+                SELECT COUNT(*) as order_count
+                FROM Publisher_Orders
+                WHERE isbn = %s
+            """
+            cursor.execute(query, (isbn,))
+            result = cursor.fetchone()
+            return result['order_count'] if result else 0
+        finally:
+            if conn: conn.close()
