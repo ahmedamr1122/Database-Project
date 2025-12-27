@@ -1,18 +1,21 @@
-from flask import Blueprint, request, jsonify, session
+from flask import Blueprint, request, jsonify, session, render_template, redirect, url_for, flash
 from models.user import User
 from models.cart import Cart
 from utils.validators import validate_email
 
 auth_bp = Blueprint('auth', __name__)
 
-@auth_bp.route('/login', methods=['POST'])
+@auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
-    data = request.json
-    username = data.get('username')
-    password = data.get('password')
+    if request.method == 'GET':
+        return render_template('login.html')
+        
+    username = request.form.get('username')
+    password = request.form.get('password')
     
     if not username or not password:
-        return jsonify({'message': 'Missing username or password'}), 400
+        flash('Missing username or password', 'danger')
+        return render_template('login.html')
     
     user, message = User.login(username, password)
     
@@ -20,42 +23,52 @@ def login():
         session['user_id'] = user['user_id']
         session['role'] = user['role']
         session['username'] = user['username']
-        return jsonify({'message': message, 'user': {'username': user['username'], 'role': user['role']}}), 200
+        # flash(message, 'success') # Optional: login success message
+        
+        if user['role'] == 'admin':
+            return redirect(url_for('admin.dashboard'))
+        else:
+            return redirect(url_for('customer.dashboard'))
     else:
-        return jsonify({'message': message}), 401
+        flash(message, 'danger')
+        return render_template('login.html')
 
-@auth_bp.route('/register', methods=['POST'])
+@auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
-    data = request.json
-    username = data.get('username')
-    password = data.get('password')
-    first_name = data.get('first_name')
-    last_name = data.get('last_name')
-    email = data.get('email')
-    phone_number = data.get('phone_number')
-    shipping_address = data.get('shipping_address')
+    if request.method == 'GET':
+        return render_template('register.html')
+        
+    username = request.form.get('username')
+    password = request.form.get('password')
+    first_name = request.form.get('first_name')
+    last_name = request.form.get('last_name')
+    email = request.form.get('email')
+    phone_number = request.form.get('phone_number')
+    shipping_address = request.form.get('shipping_address')
 
     if not all([username, password, first_name, last_name, email]):
-        return jsonify({'message': 'Missing required fields'}), 400
+         flash('Missing required fields', 'danger')
+         return render_template('register.html')
 
     if not validate_email(email):
-        return jsonify({'message': 'Invalid email format'}), 400
+         flash('Invalid email format', 'danger')
+         return render_template('register.html')
 
     success, message = User.register_user(username, password, first_name, last_name, email, phone_number, shipping_address)
     
     if success:
-        return jsonify({'message': message}), 201
+        flash(message, 'success')
+        return redirect(url_for('auth.login'))
     else:
-        status_code = 409 if "exists" in message else 500
-        return jsonify({'message': message}), status_code
+        flash(message, 'danger')
+        return render_template('register.html')
 
-@auth_bp.route('/logout', methods=['POST'])
+@auth_bp.route('/logout', methods=['GET', 'POST']) # Allow GET for simple link
 def logout():
     user_id = session.get('user_id')
     if user_id:
-        # Clear cart on logout? Requirement says "Logout (clears cart)" in file-structure notes (148)
-        # But usually cart persistence is desired. However, I follow the notes.
         Cart.clear_cart(user_id)
         
     session.clear()
-    return jsonify({'message': 'Logged out successfully'}), 200
+    flash('Logged out successfully', 'info')
+    return redirect(url_for('auth.login'))

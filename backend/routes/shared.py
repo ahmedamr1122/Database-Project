@@ -3,7 +3,7 @@ from models.book import Book
 
 shared_bp = Blueprint('shared', __name__)
 
-@shared_bp.route('/books/search', methods=['GET'])
+@shared_bp.route('/api/books/search', methods=['GET']) # Renamed to /api to distinguish
 def search_books():
     query = request.args.get('query')
     category = request.args.get('category')
@@ -11,7 +11,7 @@ def search_books():
     books = Book.search_books(query, category)
     return jsonify(books), 200
 
-@shared_bp.route('/books/<isbn>', methods=['GET'])
+@shared_bp.route('/api/books/<isbn>', methods=['GET'])
 def get_book(isbn):
     book = Book.get_book_details(isbn)
     if book:

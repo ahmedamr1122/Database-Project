@@ -1,11 +1,16 @@
 from functools import wraps
-from flask import session, jsonify
+from flask import session, jsonify, redirect, url_for, flash, request
 
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
-            return jsonify({'error': 'Unauthorized', 'message': 'Please log in to access this resource'}), 401
+            # If it's an API request, return JSON? For now, assume SSR priority.
+            # But customer.js might fetch API. 
+            # We can check request.headers.get('Accept') or path.
+            # Keep simple: Flash and redirect for now as we are doing SSR.
+            flash('Please log in to access this resource', 'warning')
+            return redirect(url_for('auth.login'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -13,10 +18,12 @@ def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
-            return jsonify({'error': 'Unauthorized', 'message': 'Please log in'}), 401
+            flash('Please log in', 'warning')
+            return redirect(url_for('auth.login'))
         
         if session.get('role') != 'admin':
-            return jsonify({'error': 'Forbidden', 'message': 'Admin access required'}), 403
+            flash('Admin access required', 'danger')
+            return redirect(url_for('customer.dashboard')) # Redirect to user home
             
         return f(*args, **kwargs)
     return decorated_function

@@ -78,8 +78,6 @@ frontend/
 - **Client-side Validation**: Password matching
 - **Actions**: Submit to `/register` endpoint
 
----
-
 ### **Admin Templates**
 
 #### `admin/dashboard.html`
@@ -158,8 +156,6 @@ frontend/
   - POST `/admin/reports/top-customers`
   - POST `/admin/reports/top-books`
   - POST `/admin/reports/replenishment`
-
----
 
 ### **Customer Templates**
 
@@ -264,8 +260,6 @@ frontend/
   - Password change validation
 - **Actions**: POST `/customer/profile`
 
----
-
 ## 🎨 CSS Styling (style.css)
 
 ### **Key Features**:
@@ -283,8 +277,6 @@ frontend/
 4. **Tables**: Hover effects for better UX
 5. **Buttons**: Consistent styling with hover effects
 6. **Badges**: Color-coded status indicators
-
----
 
 ## 📜 JavaScript Files
 
@@ -323,8 +315,6 @@ frontend/
 - `formatCreditCardInput(e)` - Format card number
 - `formatCVVInput(e)` - Format CVV
 - `validateProfileForm(e)` - Validate profile update
-
----
 
 ## 🔗 Flask Backend Integration
 
@@ -378,8 +368,6 @@ session['last_name']
 session['shipping_address']
 ```
 
----
-
 ## 🛠️ Setup Instructions
 
 1. **Place Files**:
@@ -404,7 +392,6 @@ session['shipping_address']
    - Font Awesome 6 (CDN)
    - No additional npm packages needed
 
----
 
 ## ✅ Features Checklist
 
@@ -432,8 +419,6 @@ session['shipping_address']
 - ✅ CSRF protection (Flask-WTF recommended)
 - ✅ Password confirmation
 
----
-
 ## 📱 Responsive Design
 
 All pages are mobile-friendly using Bootstrap 5's responsive grid system:
@@ -441,7 +426,6 @@ All pages are mobile-friendly using Bootstrap 5's responsive grid system:
 - Tablet (768px - 992px): 2-column layout
 - Desktop (> 992px): Full layout
 
----
 
 ## 🎯 Next Steps
 
@@ -479,12 +463,48 @@ Each member should work on their assigned templates and corresponding Flask rout
 
 ---
 
-## 📧 Support
 
-For issues or questions about the frontend:
-1. Check browser console for JavaScript errors
-2. Verify Flask routes are returning correct data
-3. Check session variables are set correctly
-4. Ensure database queries match expected format
 
-**Good luck with your project! 🚀**
+Here is the optimized documentation, refined for clarity and technical precision within the specified character limit.
+
+---
+
+# Online Bookstore - Frontend Documentation
+
+## 📁 Frontend Structure Overview
+
+```text
+frontend/
+├── static/
+│   ├── css/
+│   │   └── style.css            # Main stylesheet (Bootstrap overrides)
+│   ├── js/
+│   │   ├── main.js              # Common utilities
+│   │   ├── admin.js             # Admin logic (reports, stock)
+│   │   └── customer.js          # Customer logic (cart, checkout)
+│   └── images/
+│       └── logo.png
+│
+└── templates/
+    ├── base.html                # Master layout
+    ├── index.html               # Landing page
+    ├── login.html               # Auth: Login
+    ├── register.html            # Auth: Registration
+    │
+    ├── admin/
+    │   ├── dashboard.html       # Admin home & stats
+    │   ├── add_book.html        # Inventory entry
+    │   ├── modify_book.html     # Inventory update
+    │   ├── orders.html          # Publisher order management
+    │   └── reports.html         # Analytics interface
+    │
+    └── customer/
+        ├── dashboard.html       # User home
+        ├── search.html          # Book catalog & filters
+        ├── cart.html            # Shopping cart
+        ├── checkout.html        # Payment processing
+        ├── orders.html          # History view
+        └── profile.html         # Account settings
+
+```
+
