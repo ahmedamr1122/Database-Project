@@ -99,14 +99,13 @@ class Book:
                 conn.close()
 
     @staticmethod
-    def search_books(query_str=None, category=None):
+    def search_books(query_str=None, isbn=None, title=None, author=None, publisher=None, category=None):
         conn = get_db_connection()
         if not conn:
             return []
         try:
             cursor = conn.cursor(dictionary=True)
             # Basic query joining authors and publishers
-            # Note: Group_Concat for authors might be useful
             base_query = """
                 SELECT b.*, p.name as publisher_name, GROUP_CONCAT(a.author_name SEPARATOR ', ') as authors
                 FROM Books b
@@ -122,14 +121,30 @@ class Book:
                 where_clauses.append("b.category = %s")
                 params.append(category)
 
+            # Generic query (legacy support or if we add a global search box)
             if query_str:
-                # naive search in title, isbn, author name
-                # Since we are joining, we need to be careful with WHERE vs HAVING for aggregated columns?
-                # Actually, filtering by author name before grouping is easier.
                 search_term = f"%{query_str}%"
                 where_clauses.append("(b.title LIKE %s OR b.isbn LIKE %s OR a.author_name LIKE %s)")
                 params.extend([search_term, search_term, search_term])
             
+            # Specific fields
+            if isbn:
+                where_clauses.append("b.isbn LIKE %s")
+                params.append(f"%{isbn}%")
+            
+            if title:
+                where_clauses.append("b.title LIKE %s")
+                params.append(f"%{title}%")
+                
+            if author:
+                # We need to filter where ANY of the authors match
+                where_clauses.append("a.author_name LIKE %s")
+                params.append(f"%{author}%")
+                
+            if publisher:
+                where_clauses.append("p.name LIKE %s")
+                params.append(f"%{publisher}%")
+
             if where_clauses:
                 base_query += " WHERE " + " AND ".join(where_clauses)
             

@@ -5,30 +5,40 @@ from models.user import User
 from models.book import Book
 from utils.auth_decorators import login_required
 from utils.validators import validate_credit_card, validate_expiry_date
+from database.connection import get_db_connection
+
 
 customer_bp = Blueprint('customer', __name__, url_prefix='/customer')
 
 @customer_bp.route('/dashboard')
 @login_required
 def dashboard():
-    user_id = session.get('user_id')
-    # Get recent orders?
-    recent_orders = Order.get_user_orders(user_id)
-    # Get cart count
-    cart_items = Cart.get_cart_items(user_id)
-    cart_count = sum(item['quantity'] for item in cart_items)
-    
-    return render_template('customer/dashboard.html', 
-                           recent_orders=recent_orders[:5] if recent_orders else [],
-                           cart_count=cart_count)
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    # 1. Fetch All Books to display on the dashboard
+    cursor.execute("SELECT * FROM Books")
+    books = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    # 2. Pass the books to the dashboard template
+    return render_template('customer/dashboard.html', books=books)
 
 @customer_bp.route('/search', methods=['GET'])
 @login_required
 def search():
-    query = request.args.get('query')
+    query = request.args.get('query') # Keep for compatibility if used elsewhere
     category = request.args.get('category')
-    # Use Book.search_books(query, category)
-    books = Book.search_books(query, category)
+    isbn = request.args.get('isbn')
+    title = request.args.get('title')
+    author = request.args.get('author')
+    publisher = request.args.get('publisher')
+    
+    # Use Book.search_books with specific fields
+    books = Book.search_books(query_str=query, isbn=isbn, title=title, author=author, publisher=publisher, category=category)
+    
     # Categories for dropdown (hardcoded or from DB)
     categories = ['Science', 'Art', 'Religion', 'History', 'Geography']
     return render_template('customer/search.html', books=books, categories=categories)
@@ -69,8 +79,8 @@ def add_to_cart():
     success, message = Cart.add_to_cart(user_id, isbn, quantity)
     
     if request.is_json:
-        if success: return jsonify({'message': message}), 200
-        else: return jsonify({'message': message}), 500
+        if success: return jsonify({'success': True, 'message': message}), 200
+        else: return jsonify({'success': False, 'message': message}), 500
     else:
         if success: flash(message, 'success')
         else: flash(message, 'danger')
@@ -88,8 +98,8 @@ def remove_from_cart():
     success, message = Cart.remove_from_cart(user_id, isbn)
     
     if request.is_json:
-        if success: return jsonify({'message': message}), 200
-        return jsonify({'message': message}), 500
+        if success: return jsonify({'success': True, 'message': message}), 200
+        return jsonify({'success': False, 'message': message}), 500
     
     if success: flash(message, 'success')
     else: flash(message, 'danger')
@@ -133,22 +143,56 @@ def update_cart():
 def clear_cart():
     user_id = session.get('user_id')
     Cart.clear_cart(user_id)
+    
+    if request.is_json:
+        return jsonify({'success': True, 'message': 'Cart cleared'}), 200
+        
     flash('Cart cleared', 'success')
     return redirect(url_for('customer.get_cart'))
+
+@customer_bp.route('/cart/count', methods=['GET'])
+@login_required
+def get_cart_count():
+    user_id = session.get('user_id')
+    items = Cart.get_cart_items(user_id)
+    count = sum(item['quantity'] for item in items)
+    return jsonify({'count': count}), 200
 
 @customer_bp.route('/checkout', methods=['GET', 'POST'])
 @login_required
 def checkout():
     user_id = session.get('user_id')
-    
-    if request.method == 'GET':
-        items = Cart.get_cart_items(user_id)
-        if not items:
-            flash('Your cart is empty', 'warning')
-            return redirect(url_for('customer.get_cart'))
-        subtotal = sum(item['quantity'] * item['selling_price'] for item in items)
-        return render_template('customer/checkout.html', cart_items=items, subtotal=subtotal)
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
 
+    # 1. Fetch User Info (This fixes the 'user_info' error)
+    cursor.execute("SELECT * FROM Users WHERE user_id = %s", (user_id,))
+    user_info = cursor.fetchone()
+
+    # 2. Fetch Cart Items (Keep your existing logic here)
+    # Note: Adjust table name if yours is 'Shopping_Cart' or similar
+    query = """
+        SELECT B.title, B.selling_price, SC.quantity, (B.selling_price * SC.quantity) as total_price
+        FROM Shopping_Cart SC
+        JOIN Books B ON SC.isbn = B.isbn
+        WHERE SC.user_id = %s
+    """
+    cursor.execute(query, (user_id,))
+    items = cursor.fetchall()
+
+    # 3. Calculate Totals
+    subtotal = sum(item['total_price'] for item in items)
+    total = subtotal # Add tax/shipping logic here if needed later
+
+    cursor.close()
+    conn.close()
+
+    # 4. Pass 'user_info' to the template
+    return render_template('customer/checkout.html', 
+                        cart_items=items, 
+                        subtotal=subtotal, 
+                        total=total, 
+                        user_info=user_info)
     # POST
     credit_card_no = request.form.get('credit_card_no')
     # Expiry comes as Month and Year often or just date. file structure says dropdowns implies Month/Year?
@@ -181,19 +225,63 @@ def checkout():
 @login_required
 def get_orders():
     user_id = session.get('user_id')
-    orders = Order.get_user_orders(user_id)
-    # Might need order details? 
-    # render template expects list of orders.
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    # 1. Get the Order IDs
+    cursor.execute("SELECT * FROM Customer_Orders WHERE user_id = %s ORDER BY order_date DESC", (user_id,))
+    orders = cursor.fetchall()
+
+    # 2. Get the Books for each order
+    for order in orders:
+        # NOTE: Make sure your table is named 'Order_Items' or 'Sales'
+        # If this query crashes, your table name is likely different.
+        query = """
+            SELECT B.title, B.price, OI.quantity 
+            FROM Order_Items OI
+            JOIN Books B ON OI.book_id = B.book_id
+            WHERE OI.order_id = %s
+        """
+        try:
+            cursor.execute(query, (order['order_id'],))
+            books = cursor.fetchall()
+        except Exception:
+            books = [] # If table is missing, show empty list
+            
+        # *** THE FIX: Use a unique name 'book_list' ***
+        order['book_list'] = books
+
+    cursor.close()
+    conn.close()
+
     return render_template('customer/orders.html', orders=orders)
 
 @customer_bp.route('/profile', methods=['GET', 'POST'])
 @login_required
 def profile():
     user_id = session.get('user_id')
-    
-    if request.method == 'GET':
-        user = User.get_user_by_id(user_id)
-        return render_template('customer/profile.html', user=user)
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    # 1. Fetch User Details
+    cursor.execute("SELECT * FROM Users WHERE user_id = %s", (user_id,))
+    user = cursor.fetchone()
+
+    # 2. Fetch Orders (IMPORTANT: Verify 'user_id' vs 'customer_id' here)
+    # Based on your previous error, your table likely uses 'user_id'
+    cursor.execute("SELECT * FROM Customer_Orders WHERE user_id = %s ORDER BY order_date DESC", (user_id,))
+    orders = cursor.fetchall()
+
+    # 3. Calculate the stats
+    stats_data = {
+        'total_orders': len(orders)  # This counts the list of orders
+    }
+
+    cursor.close()
+    conn.close()
+
+    # 4. PASS THE DATA (This fixes the error)
+    return render_template('customer/profile.html', user=user, orders=orders, stats=stats_data)
     
     # POST (Update)
     first_name = request.form.get('first_name')
@@ -208,7 +296,7 @@ def profile():
     
     if success:
         flash(message, 'success')
-           # Update session info if changed? 
+        # Update session info if changed? 
         if email: session['username'] = email # If email is username? No, username is username.
         # User.py doesnt allow username update.
     else:

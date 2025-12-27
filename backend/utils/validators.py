@@ -49,3 +49,61 @@ def validate_expiry_date(expiry_date_str):
         return exp_date >= datetime.now().date()
     except ValueError:
         return False
+
+# ===== NEW VALIDATION FUNCTIONS =====
+
+def validate_phone(phone):
+    """
+    Validate phone number (10-15 digits, optional +)
+    """
+    if not phone:
+        return False
+    pattern = r'^\+?[0-9]{10,15}$'
+    phone = phone.replace(' ', '').replace('-', '')
+    return re.match(pattern, phone) is not None
+
+def validate_password(password):
+    """
+    Validate password strength:
+    - At least 8 characters
+    - At least one uppercase letter
+    - At least one lowercase letter
+    - At least one number
+    """
+    if not password:
+        return False, "Password is required"
+    
+    if len(password) < 8:
+        return False, "Password must be at least 8 characters"
+    
+    if not re.search(r'[A-Z]', password):
+        return False, "Password must contain uppercase letter"
+    
+    if not re.search(r'[a-z]', password):
+        return False, "Password must contain lowercase letter"
+    
+    if not re.search(r'\d', password):
+        return False, "Password must contain number"
+    
+    return True, "Valid"
+
+def validate_username(username):
+    """
+    Validate username:
+    - 3-50 characters
+    - Only letters, numbers, underscore, hyphen
+    - Must start with a letter
+    """
+    if not username:
+        return False, "Username is required"
+    
+    if len(username) < 3:
+        return False, "Username must be at least 3 characters"
+    
+    if len(username) > 50:
+        return False, "Username cannot exceed 50 characters"
+    
+    if not re.match(r'^[a-zA-Z][a-zA-Z0-9_-]*$', username):
+        return False, "Username must start with letter"
+    
+    return True, "Valid"

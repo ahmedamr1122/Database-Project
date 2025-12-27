@@ -8,7 +8,7 @@ def search_books():
     query = request.args.get('query')
     category = request.args.get('category')
     
-    books = Book.search_books(query, category)
+    books = Book.search_books(query_str=query, category=category)
     return jsonify(books), 200
 
 @shared_bp.route('/api/books/<isbn>', methods=['GET'])
