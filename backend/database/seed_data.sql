@@ -130,6 +130,80 @@ INSERT INTO Publisher_Orders (isbn, publisher_id, quantity, order_date, status) 
 ('978-0-385-08695-0', 3, 50, '2024-12-03', 'Pending'); -- Pending order
 
 -- =============================================
+-- 10. EDGE CASE TEST DATA
+-- =============================================
+
+-- Book with very low stock (should appear on admin dashboard low stock list)
+INSERT INTO Books (isbn, title, publisher_id, pub_year, selling_price, category, stock, threshold) VALUES
+('978-0-LOWSTOCK-1', 'Almost Out of Stock', 1, 2020, 25.99, 'Science', 3, 10);
+INSERT INTO Authors (author_name) VALUES ('Test Author Low');
+INSERT INTO Book_Authors (isbn, author_id) VALUES ('978-0-LOWSTOCK-1', 11);
+
+-- Book at exact threshold (edge case for auto-order trigger)
+INSERT INTO Books (isbn, title, publisher_id, pub_year, selling_price, category, stock, threshold) VALUES
+('978-0-ATTHRESH-1', 'Right at Threshold', 2, 2021, 19.99, 'History', 10, 10);
+INSERT INTO Authors (author_name) VALUES ('Threshold Tester');
+INSERT INTO Book_Authors (isbn, author_id) VALUES ('978-0-ATTHRESH-1', 12);
+
+-- Book with ZERO stock (should NOT be addable to cart, tests stock validation)
+INSERT INTO Books (isbn, title, publisher_id, pub_year, selling_price, category, stock, threshold) VALUES
+('978-0-NOSTOCK-01', 'Out of Stock Book', 3, 2019, 29.99, 'Art', 0, 5);
+INSERT INTO Authors (author_name) VALUES ('Sold Out Author');
+INSERT INTO Book_Authors (isbn, author_id) VALUES ('978-0-NOSTOCK-01', 13);
+
+-- Book with MULTIPLE authors (tests author handling)
+INSERT INTO Books (isbn, title, publisher_id, pub_year, selling_price, category, stock, threshold) VALUES
+('978-0-COAUTHOR-1', 'Collaborative Work', 4, 2022, 34.99, 'Science', 50, 10);
+INSERT INTO Authors (author_name) VALUES ('First Coauthor'), ('Second Coauthor'), ('Third Coauthor');
+INSERT INTO Book_Authors (isbn, author_id) VALUES 
+('978-0-COAUTHOR-1', 14),
+('978-0-COAUTHOR-1', 15),
+('978-0-COAUTHOR-1', 16);
+
+-- HIGH VOLUME customer for "Top Customers" report testing
+INSERT INTO Users (username, password, first_name, last_name, email, phone_number, shipping_address, role) VALUES
+('vip_customer', '$2b$12$L7uViO83dThWjwvY3o4A0ubXAJpqyH4CJBqP4nnL3rdHrPbskZ.ku', 'VIP', 'Customer', 'vip@email.com', '+1-555-9999', 'VIP Street 1, VIP City', 'customer');
+
+-- Many orders from VIP customer (for reports - last 3 months)
+INSERT INTO Customer_Orders (user_id, order_date, total_price, credit_card_no, expiry_date, status) VALUES
+(7, NOW() - INTERVAL 1 DAY, 150.00, '4111111111111111', '2028-12-01', 'Pending'),
+(7, NOW() - INTERVAL 5 DAY, 200.00, '4111111111111111', '2028-12-01', 'Pending'),
+(7, NOW() - INTERVAL 10 DAY, 175.00, '4111111111111111', '2028-12-01', 'Pending'),
+(7, NOW() - INTERVAL 30 DAY, 300.00, '4111111111111111', '2028-12-01', 'Pending'),
+(7, NOW() - INTERVAL 60 DAY, 250.00, '4111111111111111', '2028-12-01', 'Pending');
+
+-- Order Items for VIP customer order (testing top selling books)
+INSERT INTO Order_Items (order_id, isbn, quantity, unit_price) VALUES
+(6, '978-0-545-01022-1', 5, 12.99),  -- Harry Potter sells a lot
+(7, '978-0-545-01022-1', 8, 12.99),  -- Harry Potter
+(8, '978-0-545-01022-1', 3, 12.99),  
+(8, '978-0-553-89785-6', 5, 15.99),  -- Game of Thrones sells too
+(9, '978-0-553-89785-6', 10, 15.99), 
+(10, '978-0-553-89785-6', 7, 15.99);
+
+-- OLD order (outside 3-month window - should NOT appear in Top Customer report)
+INSERT INTO Customer_Orders (user_id, order_date, total_price, credit_card_no, expiry_date, status) VALUES
+(6, NOW() - INTERVAL 120 DAY, 500.00, '4111111111111111', '2028-12-01', 'Pending'); -- Charlie's old order
+
+-- Customer with EXPIRED card for testing (expiry in the past)
+INSERT INTO Users (username, password, first_name, last_name, email, phone_number, shipping_address, role) VALUES
+('expired_card_user', '$2b$12$L7uViO83dThWjwvY3o4A0ubXAJpqyH4CJBqP4nnL3rdHrPbskZ.ku', 'Expired', 'Card', 'expired@email.com', '+1-555-0000', 'Expired St', 'customer');
+
+-- Add item to expired_card_user's cart for checkout testing
+INSERT INTO Shopping_Cart (user_id, isbn, quantity) VALUES
+(8, '978-0-545-01022-1', 1);
+
+-- Very expensive book (for high total testing)
+INSERT INTO Books (isbn, title, publisher_id, pub_year, selling_price, category, stock, threshold) VALUES
+('978-0-EXPENSIVE1', 'Rare Collector Edition', 5, 2015, 999.99, 'Art', 5, 2);
+INSERT INTO Book_Authors (isbn, author_id) VALUES ('978-0-EXPENSIVE1', 1);
+
+-- Very cheap book (for low total testing)
+INSERT INTO Books (isbn, title, publisher_id, pub_year, selling_price, category, stock, threshold) VALUES
+('978-0-CHEAPBOOK1', 'Budget Read', 1, 2023, 1.99, 'Geography', 100, 20);
+INSERT INTO Book_Authors (isbn, author_id) VALUES ('978-0-CHEAPBOOK1', 10);
+
+-- =============================================
 -- VERIFICATION QUERIES (Optional - for testing)
 -- =============================================
 
@@ -153,3 +227,11 @@ ORDER BY co.order_date DESC;
 
 -- Check low stock books (should trigger publisher orders)
 SELECT isbn, title, stock, threshold FROM Books WHERE stock <= threshold;
+
+-- Check books with multiple authors
+SELECT b.isbn, b.title, GROUP_CONCAT(a.author_name SEPARATOR ', ') as authors
+FROM Books b
+JOIN Book_Authors ba ON b.isbn = ba.isbn
+JOIN Authors a ON ba.author_id = a.author_id
+GROUP BY b.isbn
+HAVING COUNT(a.author_id) > 1;

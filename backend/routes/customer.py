@@ -247,7 +247,7 @@ def get_orders():
         # NOTE: Make sure your table is named 'Order_Items' or 'Sales'
         # If this query crashes, your table name is likely different.
         query = """
-            SELECT B.title, B.selling_price as price, OI.quantity 
+            SELECT B.title, B.selling_price as unit_price, OI.quantity 
             FROM Order_Items OI
             JOIN Books B ON OI.isbn = B.isbn
             WHERE OI.order_id = %s
