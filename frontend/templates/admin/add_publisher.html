@@ -1,0 +1,90 @@
+{% extends "base.html" %} {% block title %}Add Publisher - Admin{% endblock %}
+{% block content %}
+<h2><i class="fas fa-building"></i> Add New Publisher</h2>
+<p class="text-muted">Register a new publishing house</p>
+
+<div class="row mt-4">
+  <div class="col-md-8 mx-auto">
+    <div class="card">
+      <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="fas fa-plus"></i> Publisher Details</h5>
+      </div>
+      <div class="card-body">
+        <form method="POST" action="/admin/add-publisher">
+          <div class="mb-3">
+            <label for="name" class="form-label">Publisher Name</label>
+            <input
+              type="text"
+              class="form-control"
+              id="name"
+              name="name"
+              required
+              placeholder="e.g. Pearson, McGraw Hill"
+            />
+          </div>
+
+          <div class="mb-3">
+            <label for="address" class="form-label">Address</label>
+            <textarea
+              class="form-control"
+              id="address"
+              name="address"
+              rows="3"
+              required
+              placeholder="Full physical address"
+            ></textarea>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="email" class="form-label">Email Address</label>
+              <input
+                type="email"
+                class="form-control"
+                id="email"
+                name="email"
+                required
+                placeholder="contact@example.com"
+              />
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="phone" class="form-label">Phone Number</label>
+              <input
+                type="tel"
+                class="form-control"
+                id="phone"
+                name="phone"
+                required
+                placeholder="+1 234 567 8900"
+              />
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="banking_account" class="form-label"
+              >Banking Account</label
+            >
+            <input
+              type="text"
+              class="form-control"
+              id="banking_account"
+              name="banking_account"
+              required
+              placeholder="Account Number or IBAN"
+            />
+          </div>
+
+          <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-success">
+              <i class="fas fa-save"></i> Add Publisher
+            </button>
+            <a href="/admin/dashboard" class="btn btn-secondary">
+              <i class="fas fa-times"></i> Cancel
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

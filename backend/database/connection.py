@@ -34,4 +34,14 @@ class Database:
         return None
 
 def get_db_connection():
-    return Database.get_connection()
+    try:
+        connection = mysql.connector.connect(
+            host='localhost',        # Or '127.0.0.1'
+            user='user',             # Make sure this matches docker-compose
+            password='userpassword', # Make sure this matches docker-compose
+            database='OnlineBookstore'
+        )
+        return connection
+    except mysql.connector.Error as err:
+        print(f"❌ DATABASE CONNECTION ERROR: {err}") # <--- Look for this in terminal
+        return None

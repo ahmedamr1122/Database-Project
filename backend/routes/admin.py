@@ -1,6 +1,7 @@
-from flask import Blueprint, request, jsonify, render_template, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, session, flash, jsonify, abort
 from models.book import Book
 from models.publisher import Publisher
+from models.user import User
 from utils.auth_decorators import admin_required
 from utils.validators import validate_isbn
 from database.connection import get_db_connection
@@ -11,6 +12,9 @@ admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 @admin_required
 def dashboard():
     conn = get_db_connection()
+    if conn is None:
+        return "Database connection failed! Check the terminal logs for the error message."
+    
     cursor = conn.cursor(dictionary=True)
     
     # 1. Get Total Books
@@ -56,7 +60,9 @@ def dashboard():
 def add_book():
     if request.method == 'GET':
         publishers = Publisher.get_all_publishers()
+
         return render_template('admin/add_book.html', publishers=publishers)
+
 
     # POST
     isbn = request.form.get('isbn')
@@ -87,6 +93,31 @@ def add_book():
         flash(message, 'danger')
         return redirect(url_for('admin.add_book'))
 
+@admin_bp.route('/add-publisher', methods=['GET', 'POST'])
+@admin_required
+def add_publisher():
+    if request.method == 'GET':
+        return render_template('admin/add_publisher.html')
+
+    # POST
+    name = request.form.get('name')
+    address = request.form.get('address')
+    email = request.form.get('email')
+    phone = request.form.get('phone')
+    banking = request.form.get('banking_account')
+
+    if not all([name, address, email, phone, banking]):
+        flash('Missing required fields', 'danger')
+        return redirect(url_for('admin.add_publisher'))
+
+    success, message = Publisher.add_publisher(name, address, email, phone, banking)
+    if success:
+        flash(message, 'success')
+        return redirect(url_for('admin.dashboard'))
+    else:
+        flash(message, 'danger')
+        return redirect(url_for('admin.add_publisher'))
+
 # Modify/Search Book Route needed? Frontend has modify_book.html
 # It likely needs a search first, then edit form.
 # Let's assume /admin/modify-book ? 
@@ -100,13 +131,23 @@ def add_book():
 @admin_required
 def modify_book():
     book = None
-    if request.args.get('search'):
-        query = request.args.get('search')
+    # Check for Edit Mode
+    if request.method == 'GET' and request.args.get('mode') == 'edit':
+        isbn = request.args.get('isbn')
+        if isbn:
+            book = Book.get_book_details(isbn)
+            publishers = Publisher.get_all_publishers()
+            return render_template('admin/modify_book.html', book=book, publishers=publishers)
+
+    # Check for search param (unified) or individual fields (isbn/title)
+    search_query = request.args.get('search') or request.args.get('isbn') or request.args.get('title')
+    
+    if search_query:
         # Search for one book or list? 
         # modify_book.html implies "Search book, then edit form".
         # Let's search and pick first or exact match?
         # Book.search_books returns list.
-        results = Book.search_books(query)
+        results = Book.search_books(search_query)
         # If specific ISBN update? 
         # Let's assume this route handles both listing results and showing edit form?
         # Or maybe just List.
@@ -120,12 +161,15 @@ def modify_book():
         selling_price = request.form.get('selling_price')
         category = request.form.get('category')
         threshold = request.form.get('threshold')
+        publisher_id = request.form.get('publisher_id')
+        authors_str = request.form.get('authors')
+        authors = [a.strip() for a in authors_str.split(',')] if authors_str else []
         
-        if not all([title, pub_year, selling_price, category, threshold]):
+        if not all([title, pub_year, selling_price, category, threshold, publisher_id, authors]):
             flash('Missing required fields', 'danger')
             return redirect(url_for('admin.modify_book'))
             
-        success, message = Book.update_book(isbn, title, pub_year, selling_price, category, threshold)
+        success, message = Book.update_book(isbn, title, publisher_id, pub_year, selling_price, category, threshold, authors)
         if success:
             flash(message, 'success')
         else:
@@ -218,6 +262,30 @@ def reports():
 @admin_required
 def report_sales_month():
     sales = Publisher.report_sales_last_month()
-    return jsonify({'last_month_sales': sales}), 200
+    return render_template('admin/reports.html', monthly_sales=sales)
 
-# Add other report routes as per README
+@admin_bp.route('/reports/sales-day', methods=['POST'])
+@admin_required
+def report_sales_day():
+    date_str = request.form.get('date')
+    sales = Publisher.report_sales_day(date_str)
+    return render_template('admin/reports.html', daily_sales=sales, selected_date=date_str)
+
+@admin_bp.route('/reports/top-customers', methods=['POST'])
+@admin_required
+def report_top_customers():
+    customers = User.get_top_customers()
+    return render_template('admin/reports.html', top_customers=customers)
+
+@admin_bp.route('/reports/top-books', methods=['POST'])
+@admin_required
+def report_top_books():
+    books = Book.get_top_selling_books()
+    return render_template('admin/reports.html', top_books=books)
+
+@admin_bp.route('/reports/replenishment', methods=['POST'])
+@admin_required
+def report_replenishment():
+    isbn = request.form.get('isbn')
+    count = Publisher.get_replenishment_history(isbn)
+    return render_template('admin/reports.html', replenishment_count=count, replenishment_isbn=isbn)

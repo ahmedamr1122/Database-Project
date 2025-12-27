@@ -53,20 +53,42 @@ class Book:
                 conn.close()
 
     @staticmethod
-    def update_book(isbn, title, pub_year, selling_price, category, threshold):
-        # Modification usually doesn't change ISBN or Authors easily, but let's see. 
-        # File structure says "Edit/update books".
+    @staticmethod
+    def update_book(isbn, title, publisher_id, pub_year, selling_price, category, threshold, authors):
         conn = get_db_connection()
         if not conn:
             return False, "Database connection error"
         try:
             cursor = conn.cursor()
+            conn.start_transaction()
+
+            # Update Book Details
             query = """
                 UPDATE Books 
-                SET title=%s, pub_year=%s, selling_price=%s, category=%s, threshold=%s
+                SET title=%s, publisher_id=%s, pub_year=%s, selling_price=%s, category=%s, threshold=%s
                 WHERE isbn=%s
             """
-            cursor.execute(query, (title, pub_year, selling_price, category, threshold, isbn))
+            cursor.execute(query, (title, publisher_id, pub_year, selling_price, category, threshold, isbn))
+
+            # Update Authors: Simplest way is delete all for this ISBN and re-add
+            cursor.execute("DELETE FROM Book_Authors WHERE isbn = %s", (isbn,))
+            
+            for author_name in authors:
+                author_name = author_name.strip()
+                if not author_name: continue
+                
+                # Check/Add Author
+                cursor.execute("SELECT author_id FROM Authors WHERE author_name = %s", (author_name,))
+                author_row = cursor.fetchone()
+                if author_row:
+                     author_id = author_row[0]
+                else:
+                    cursor.execute("INSERT INTO Authors (author_name) VALUES (%s)", (author_name,))
+                    author_id = cursor.lastrowid
+                
+                # Link
+                cursor.execute("INSERT INTO Book_Authors (isbn, author_id) VALUES (%s, %s)", (isbn, author_id))
+
             conn.commit()
             return True, "Book updated"
         except Exception as e:
@@ -138,6 +160,31 @@ class Book:
             """
             cursor.execute(query, (isbn,))
             return cursor.fetchone()
+        finally:
+             if conn.is_connected():
+                cursor.close()
+                conn.close()
+
+    @staticmethod
+    def get_top_selling_books(limit=10):
+        conn = get_db_connection()
+        if not conn: return []
+        try:
+            cursor = conn.cursor(dictionary=True)
+            # Sum quantity from Order_Items joined with Customer_Orders (for date filter if needed)
+            # db.sql line 185 shows simple check, but for top selling we need aggregate
+            query = """
+                SELECT b.isbn, b.title, SUM(oi.quantity) as copies_sold
+                FROM Books b
+                JOIN Order_Items oi ON b.isbn = oi.isbn
+                JOIN Customer_Orders co ON oi.order_id = co.order_id
+                WHERE co.order_date >= DATE_SUB(NOW(), INTERVAL 3 MONTH)
+                GROUP BY b.isbn
+                ORDER BY copies_sold DESC
+                LIMIT %s
+            """
+            cursor.execute(query, (limit,))
+            return cursor.fetchall()
         finally:
              if conn.is_connected():
                 cursor.close()

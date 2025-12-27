@@ -98,16 +98,17 @@ INSERT INTO Shopping_Cart (user_id, isbn, quantity) VALUES
 (3, '978-0-385-08695-0', 1), -- Jane Smith: 1 The Shining
 (4, '978-0-06-269366-2', 3), -- Bob Wilson: 3 Murder on the Orient Express
 (5, '978-0-307-74255-7', 1); -- Alice Brown: 1 Kafka on the Shore
+-- (5, '978-0-385-53783-1', 1); -- Alice Brown: 1 The Handmaid's Tale
 
 -- =============================================
 -- 7. CUSTOMER ORDERS (Sample orders)
 -- =============================================
 INSERT INTO Customer_Orders (user_id, order_date, total_price, credit_card_no, expiry_date, status) VALUES
-(2, '2024-12-01 10:30:00', 44.97, '4111111111111111', '2026-12-26', 'Pending'), -- John Doe order
-(3, '2024-12-02 14:20:00', 11.99, '5555555555554444', '2027-08-27', 'Pending'), -- Jane Smith order
-(4, '2024-12-03 16:45:00', 29.97, '378282246310005', '2028-05-28', 'Pending'),  -- Bob Wilson order
-(5, '2024-12-04 09:15:00', 14.99, '6011111111111117', '2029-11-29', 'Pending'), -- Alice Brown order
-(2, '2024-12-05 11:00:00', 15.99, '4111111111111111', '2026-12-26', 'Pending'); -- John Doe second order
+(2, '2025-12-01 10:30:00', 44.97, '4111111111111111', '2026-12-26', 'Pending'), -- John Doe order
+(3, '2025-12-02 14:20:00', 11.99, '5555555555554444', '2027-08-27', 'Pending'), -- Jane Smith order
+(4, '2025-12-03 16:45:00', 29.97, '378282246310005', '2028-05-28', 'Pending'),  -- Bob Wilson order
+(5, '2025-12-04 09:15:00', 14.99, '6011111111111117', '2029-11-29', 'Pending'), -- Alice Brown order
+(2, '2025-12-05 11:00:00', 15.99, '4111111111111111', '2026-12-26', 'Pending'); -- John Doe second order
 
 -- =============================================
 -- 8. ORDER ITEMS (Details for orders)
